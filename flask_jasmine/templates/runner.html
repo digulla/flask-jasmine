@@ -32,51 +32,28 @@
   <link rel="stylesheet" type="text/css" href="{{ media_url }}jasmine/jasmine.css">
   <script type="text/javascript" src="{{ media_url }}jasmine/jasmine.js"></script>
   <script type="text/javascript" src="{{ media_url }}jasmine/jasmine-html.js"></script>
+  <script type="text/javascript" src="{{ media_url }}jasmine/boot0.js"></script>
 
-  {% for spec in specs %}
-    <script type="text/javascript" src="{{ spec }}"></script>
+  {% for it in jasmine_env %}
+    <script type="text/javascript" src="{{ it }}"></script>
   {% endfor %}
 
-  {% for source in sources %}
-    <script type="text/javascript" src="{{ source }}"></script>
+  <script type="text/javascript" src="{{ media_url }}jasmine/boot1.js"></script>
+
+  {% for it in sources %}
+    <script type="text/javascript" src="{{ it }}"></script>
+  {% endfor %}
+
+  {% for it in specs %}
+    <script type="text/javascript" src="{{ it }}"></script>
   {% endfor %}
 
 
   <div id="head">
     <strong>Flask-Jasmine</strong> Test Runner
     <sup><a href="">Flask-Jasmine</a></sup>
-    <sup><a href="http://pivotal.github.com/jasmine/">Jasmine website</a></sup>
+    <sup><a href="https://jasmine.github.io/">Jasmine website</a></sup>
   </div>
-
-
-  <script type="text/javascript">
-    (function() {
-      var jasmineEnv = jasmine.getEnv();
-      jasmineEnv.updateInterval = 1000;
-
-      var trivialReporter = new jasmine.TrivialReporter();
-
-      jasmineEnv.addReporter(trivialReporter);
-
-      jasmineEnv.specFilter = function(spec) {
-        return trivialReporter.specFilter(spec);
-      };
-
-      var currentWindowOnload = window.onload;
-
-      window.onload = function() {
-        if (currentWindowOnload) {
-          currentWindowOnload();
-        }
-        execJasmine();
-      };
-
-      function execJasmine() {
-        jasmineEnv.execute();
-      }
-
-    })();
-  </script>
 </head>
 <body>
 </body>

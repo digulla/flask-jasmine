@@ -11,12 +11,12 @@ from setuptools import setup
 
 setup(
     name='Flask-Jasmine',
-    version='1.2',
+    version='2.0',
     url='https://github.com/joymax/flask-jasmine',
     license='BSD',
-    author='Maksym Klymyshyn',
-    author_email='klymyshyn@gmail.com',
-    description='Execution of Jasmine JavaScript tests within Flask',
+    author='Aaron Digulla',
+    author_email='digulla@hepe.com',
+    description='Execution of Jasmine JavaScript tests within Flask. Based on the work of Maksym Klymyshyn <klymyshyn@gmail.com>',
     long_description=__doc__,
     packages=['flask_jasmine'],
     zip_safe=False,

@@ -6,8 +6,6 @@ from jinja2 import Environment, PackageLoader
 from flask import Blueprint, send_from_directory
 
 
-__all__ = ('Jasmine', 'Asset', 'JasmineSpecfile')
-
 module = Blueprint('jasmine', __name__)
 
 
@@ -27,7 +25,7 @@ class Asset(object):
 
     def contents(self, app):
         """
-        Here is direty hack to convert urls
+        Here is dirty hack to convert urls
         to absolute paths. Webassets aren't friendly
         enough to write proper code
         """
@@ -55,6 +53,8 @@ class Asset(object):
 
 class Jasmine(object):
     _static_dir = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), 'static', 'jasmine', 'lib', 'jasmine-4.2.0'))
+    _icon_dir = os.path.realpath(
         os.path.join(os.path.dirname(__file__), 'static'))
     _media_url = '/_jasmine/testrunner/media/'
 
@@ -63,6 +63,7 @@ class Jasmine(object):
 
         self.app.config.setdefault('JASMINE_SPECS', [])
         self.app.config.setdefault('JASMINE_SOURCES', [])
+        self.app.config.setdefault('JASMINE_ENV_SOURCES', [])
 
         if not app.debug:
             return
@@ -72,8 +73,11 @@ class Jasmine(object):
             extensions=['jinja2.ext.i18n'],
             loader=PackageLoader('flask_jasmine', 'templates'))
 
-        app.add_url_rule('%s<path:filename>' % self._media_url,
+        app.add_url_rule('%s/jasmine/<path:filename>' % self._media_url,
             '_jasmine.static', self.send_static_file)
+
+        app.add_url_rule('%s/Flask-Jasmine.png' % self._media_url,
+            '_jasmine.icon', self.send_icon)
 
         app.add_url_rule('/jasmine/testrunner/',
             '_jasmine.runner', self.runner_view)
@@ -87,6 +91,9 @@ class Jasmine(object):
     def sources(self, *args):
         self.app.config['JASMINE_SOURCES'].extend(list(args))
 
+    def env_sources(self, *args):
+        self.app.config['JASMINE_ENV_SOURCES'].extend(list(args))
+
     def build_sources(self, data):
         """
         Build list of sources from plain configs or
@@ -96,7 +103,7 @@ class Jasmine(object):
         lst = []
 
         for item in data:
-            if isinstance(item, (str, unicode)):
+            if isinstance(item, (str, bytes)):
                 lst.append("%s/%s" % (self.app.static_url_path, item))
                 continue
 
@@ -115,9 +122,17 @@ class Jasmine(object):
         template_name = "runner.html"
         template = self.jinja_env.get_template(template_name)
 
+        jasmine_env = self.build_sources(self.app.config['JASMINE_ENV_SOURCES'])
+        sources = self.build_sources(self.app.config['JASMINE_SOURCES'])
+        specs = self.build_sources(self.app.config['JASMINE_SPECS'])
+        
+        print(f"runner_view(): sources={sources}")
+        print(f"runner_view(): specs={specs}")
+
         return template.render({
-            'specs': self.build_sources(self.app.config['JASMINE_SPECS']),
-            'sources': self.build_sources(self.app.config['JASMINE_SOURCES']),
+            'jasmine_env': jasmine_env,
+            'specs': specs,
+            'sources': sources,
             'media_url': self._media_url
         })
 
@@ -127,6 +142,9 @@ class Jasmine(object):
         """
         return send_from_directory(self._static_dir, filename)
 
+    def send_icon(self):
+        return send_from_directory(self._icon_dir, 'Flask-Jasmine.png')
+
 
 # In case Flask-Script available we
 # define custom flask-script command to
@@ -135,7 +153,7 @@ class Jasmine(object):
 # NB: this is shitty implementation/idea checking
 # should be cleaned up
 try:
-    from flask.ext.script import Command
+    from flask_script import Command
 
     class JasmineSpecfile(Command):
         """Command to generate SpecRunner for Jasmine
@@ -161,14 +179,21 @@ try:
             lib_base = os.path.join(
                 os.path.dirname(jasmine.__file__),
                 'static',
-                'jasmine'
+                'jasmine',
+                'lib',
+                'jasmine-4.2.0'
             )
             lib_files = [os.path.join(lib_base, fl) for fl in (
                 'jasmine.js',
                 'jasmine-html.js',
-                'contrib/jasmine.console_reporter.js',
-                'contrib/jasmine.junit_reporter.js'
+                'boot0.js',
+                'boot1.js',
+                #'contrib/jasmine.console_reporter.js',
+                #'contrib/jasmine.junit_reporter.js'
             )]
+            
+            jasmine_env = app.config.get('JASMINE_ENV_SOURCES', [])
+            lib_files[-1:-1] = jasmine_env
 
             files = []
 
@@ -190,7 +215,7 @@ try:
                 )).read()
             )
 
-            print template.render(files=files, jasmine=lib_files)
+            print(template.render(files=files, jasmine=lib_files))
 
 except ImportError:
     pass
